@@ -142,6 +142,11 @@ Here's this module being exercised from an iex session:
 
   @spec new_game :: state
   def new_game do
+    %{
+      word:       Hangman.Dictionary.random_word,
+      guessed:    MapSet.new,
+      turns_left: 10
+    }
   end
 
 
@@ -152,6 +157,11 @@ Here's this module being exercised from an iex session:
   """
   @spec new_game(binary) :: state
   def new_game(word) do
+    %{
+      word:       word,
+      guessed:    MapSet.new,
+      turns_left: 10
+    }
   end
 
 
@@ -177,6 +187,13 @@ Here's this module being exercised from an iex session:
 
   @spec make_move(state, ch) :: { state, atom, optional_ch }
   def make_move(state, guess) do
+    updated_state = %{ state | guessed: MapSet.put(state.guessed, guess) }
+
+    if state.word |> String.codepoints |> Enum.member?(guess) do
+      process_good_move(updated_state, guess)
+    else
+      process_bad_move(updated_state, guess)
+    end
   end
 
 
@@ -187,6 +204,7 @@ Here's this module being exercised from an iex session:
   """
   @spec word_length(state) :: integer
   def word_length(%{ word: word }) do
+    String.length(word)
   end
 
   @doc """
@@ -199,6 +217,7 @@ Here's this module being exercised from an iex session:
 
   @spec letters_used_so_far(state) :: [ binary ]
   def letters_used_so_far(state) do
+    MapSet.to_list(state.guessed)
   end
 
   @doc """
@@ -211,6 +230,7 @@ Here's this module being exercised from an iex session:
 
   @spec turns_left(state) :: integer
   def turns_left(state) do
+    state.turns_left
   end
 
   @doc """
@@ -224,6 +244,13 @@ Here's this module being exercised from an iex session:
 
   @spec word_as_string(state, boolean) :: binary
   def word_as_string(state, reveal \\ false) do
+    if reveal do
+      letters(state)
+      |> Enum.join(" ")
+    else
+      letters(state)
+      |> Enum.map_join(" ", &( if Enum.member?(state.guessed, &1), do: &1, else: "_" ))
+    end
   end
 
   ###########################
@@ -232,4 +259,29 @@ Here's this module being exercised from an iex session:
 
   # Your private functions go here
 
+  defp process_good_move(state, guess) do
+    if Enum.all?(letters(state), &( Enum.member?(state.guessed, &1) )) do
+      { state, :won, nil }
+    else
+      { state, :good_guess, guess }
+    end
+  end
+
+  defp process_bad_move(state, guess) do
+    updated_state = subtract_turn(state)
+
+    if updated_state.turns_left == 0 do
+      { updated_state, :lost, nil }
+    else
+      { updated_state, :bad_guess, guess }
+    end
+  end
+
+  defp subtract_turn(state) do
+    %{ state | turns_left: state.turns_left - 1 }
+  end
+
+  defp letters(state) do
+    state.word |> String.codepoints
+  end
  end
