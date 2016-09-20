@@ -1,6 +1,9 @@
 # Hangman
 
-**TODO: Add description**
+Jason Stumbaugh's submission for the Assignment 2b: Hangman
+SMU ID: 39849346
+CSE 5345: Advanced Application Programming
+September 19th, 2016
 
 ## Installation
 
